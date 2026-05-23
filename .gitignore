@@ -1,0 +1,26 @@
+# Mirror-local gitignore for kravadk/XCup. The umbrella .gitignore covers the
+# monorepo; this one runs when the mirror is cloned standalone.
+
+node_modules
+dist
+dist-ssr
+.vite
+.DS_Store
+*.log
+*.local
+
+# env / secrets
+.env
+.env.local
+
+# Hardhat build output
+contracts/artifacts-hh/
+contracts/cache-hh/
+contracts/artifacts/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Ad-hoc smoke / diagnostic scripts
+*.tmp.mjs
+smoke-*.tmp.mjs
