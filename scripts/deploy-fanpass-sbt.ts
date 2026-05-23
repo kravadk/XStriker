@@ -1,0 +1,73 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import solc from 'solc';
+import { JsonRpcProvider, Wallet, ContractFactory } from 'ethers';
+import 'dotenv/config';
+
+const ROOT = path.resolve(import.meta.dirname, '..', '..');
+const CONTRACT_PATH = path.join(ROOT, 'contracts', 'FanPassSBT.sol');
+const OUT_DIR = path.join(ROOT, 'contracts', 'artifacts');
+
+const rpcUrl = process.env.X_LAYER_RPC_URL ?? 'https://rpc.xlayer.tech';
+const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
+
+if (!privateKey) {
+  throw new Error('DEPLOYER_PRIVATE_KEY is required');
+}
+
+const source = fs.readFileSync(CONTRACT_PATH, 'utf8');
+const input = {
+  language: 'Solidity',
+  sources: {
+    'FanPassSBT.sol': { content: source },
+  },
+  settings: {
+    optimizer: { enabled: true, runs: 200 },
+    outputSelection: {
+      '*': {
+        '*': ['abi', 'evm.bytecode.object'],
+      },
+    },
+  },
+};
+
+const output = JSON.parse(solc.compile(JSON.stringify(input))) as {
+  errors?: Array<{ severity: 'error' | 'warning'; formattedMessage: string }>;
+  contracts: Record<string, Record<string, { abi: unknown[]; evm: { bytecode: { object: string } } }>>;
+};
+
+const errors = output.errors ?? [];
+for (const err of errors) {
+  const stream = err.severity === 'error' ? process.stderr : process.stdout;
+  stream.write(`${err.formattedMessage}\n`);
+}
+if (errors.some((err) => err.severity === 'error')) {
+  throw new Error('Solidity compilation failed');
+}
+
+const compiled = output.contracts['FanPassSBT.sol']?.FanPassSBT;
+if (!compiled) {
+  throw new Error('FanPassSBT artifact not found in solc output');
+}
+
+fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.writeFileSync(
+  path.join(OUT_DIR, 'FanPassSBT.json'),
+  JSON.stringify({ abi: compiled.abi, bytecode: compiled.evm.bytecode.object }, null, 2),
+);
+
+const provider = new JsonRpcProvider(rpcUrl);
+const wallet = new Wallet(privateKey, provider);
+const network = await provider.getNetwork();
+
+console.log(`[fanpass-sbt] deploying from ${wallet.address}`);
+console.log(`[fanpass-sbt] rpc=${rpcUrl} chainId=${network.chainId}`);
+
+const factory = new ContractFactory(compiled.abi, compiled.evm.bytecode.object, wallet);
+const contract = await factory.deploy();
+console.log(`[fanpass-sbt] tx=${contract.deploymentTransaction()?.hash ?? 'pending'}`);
+await contract.waitForDeployment();
+const address = await contract.getAddress();
+
+console.log(`[fanpass-sbt] deployed=${address}`);
+console.log(`[fanpass-sbt] set FANPASS_SBT_ADDRESS=${address}`);
