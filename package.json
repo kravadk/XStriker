@@ -1,0 +1,22 @@
+{
+  "name": "xcup",
+  "private": true,
+  "version": "0.1.0",
+  "description": "X Cup — World Cup 2026 prediction market on X Layer. Frontend pages + components, Solidity contracts, deploy scripts. Mirrored from kravadk/XSight monorepo.",
+  "scripts": {
+    "comment": "This is a product slice inside the XSight monorepo. Run dev/build/typecheck from the umbrella repo root."
+  },
+  "dependencies": {
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.28.6",
+    "typescript": "^5.6.3"
+  }
+}
