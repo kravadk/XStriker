@@ -4,6 +4,7 @@ import { useApi } from '@shared/hooks/useApi';
 import { useWalletStore } from '@shared/store/walletStore';
 import { useUiStore } from '@shared/store/uiStore';
 import { PageHeader, StatePanel } from '@xcup/components/cup/CupKit';
+import { HookDiscountCard } from '@xcup/components/cup/HookDiscountCard';
 import { InfoTip } from '@shared/common/InfoTip';
 import { explorerAddress } from '@shared/config/links';
 
@@ -78,6 +79,8 @@ export function FanPassPage() {
                 <div className="mt-1 text-xs text-stadium-text-secondary">{score.data.verdict}</div>
               </div>
             </div>
+
+            <HookDiscountCard />
 
             <div className="stadium-card p-4">
               <div className="mb-3 flex items-center gap-1 text-micro text-pitch">

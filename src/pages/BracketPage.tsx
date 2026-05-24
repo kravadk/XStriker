@@ -7,6 +7,7 @@ import { useUiStore } from '@shared/store/uiStore';
 import { toast } from '@shared/store/toastStore';
 import { celebrate } from '@shared/store/celebrateStore';
 import { PageHeader, StatePanel } from '@xcup/components/cup/CupKit';
+import { PotEligibilityCard } from '@xcup/components/cup/PotEligibilityCard';
 import { cn } from '@shared/utils/format';
 import { explorerAddress } from '@shared/config/links';
 
@@ -101,6 +102,10 @@ export function BracketPage() {
         <span className="ml-auto flex items-center gap-1.5 text-sm font-bold text-gold">
           <Bot className="h-4 w-4" /> Hermes {hermes ? `${hermes.correct}/${hermes.scored}` : '0/0'}
         </span>
+      </div>
+
+      <div className="mb-4">
+        <PotEligibilityCard correct={you?.correct} scored={you?.scored} />
       </div>
 
       {nft.data && (
