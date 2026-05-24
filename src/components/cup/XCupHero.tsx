@@ -4,9 +4,13 @@ import { HexGrid } from '@shared/common/HexGrid';
 interface Props {
   /** Optional number of markets live right now, shown on a status chip */
   liveCount?: number;
+  /** Distinct fixtures (matches) currently indexed from ParimutuelMarket */
+  fixtureCount?: number;
+  /** Total market count (fixtures × market-types) */
+  marketCount?: number;
 }
 
-export function XCupHero({ liveCount }: Props) {
+export function XCupHero({ liveCount, fixtureCount, marketCount }: Props) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-stadium-line bg-gradient-to-br from-[#141B12] to-[#0F140E] p-7 md:p-9">
       <HexGrid color="#E7B84F" opacity={0.05} />
@@ -48,9 +52,14 @@ export function XCupHero({ liveCount }: Props) {
         </p>
 
         <div className="flex items-center gap-2 flex-wrap mt-1">
-          <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-stadium-elevated border border-stadium-line text-stadium-text-secondary">
-            104 fixtures
-          </span>
+          {fixtureCount !== undefined && (
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-stadium-elevated border border-stadium-line text-stadium-text-secondary">
+              {fixtureCount} {fixtureCount === 1 ? 'fixture' : 'fixtures'}
+              {marketCount !== undefined && marketCount !== fixtureCount && (
+                <span className="text-stadium-text-muted"> · {marketCount} markets</span>
+              )}
+            </span>
+          )}
           <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-pitch-bg border border-pitch-border text-pitch font-bold">
             3 market types · 1X2 · O/U · BTTS
           </span>

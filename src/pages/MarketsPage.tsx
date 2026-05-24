@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { api, type MarketViewDto, type FanScoreDto } from '@shared/api/client';
 import { useApi } from '@shared/hooks/useApi';
 import { useUiStore } from '@shared/store/uiStore';
 import { useWalletStore } from '@shared/store/walletStore';
 import { SegmentedTabs } from '@shared/common/SegmentedTabs';
-import { MatchupHeader, OutcomeBar, MarketStatusBadge, StatePanel, formatPool } from '@xcup/components/cup/CupKit';
+import { StatePanel } from '@xcup/components/cup/CupKit';
+import { FixtureCard } from '@xcup/components/cup/FixtureCard';
 import { XCupHero } from '@xcup/components/cup/XCupHero';
 import { XCupTierRing } from '@xcup/components/cup/XCupTierRing';
 import { XCupMiniWidget } from '@xcup/components/cup/XCupMiniWidget';
@@ -28,16 +29,33 @@ const TYPE_FILTERS: { id: TypeFilter; label: string }[] = [
   { id: 'BTTS', label: 'Both Score' },
 ];
 
-const TYPE_SHORT: Record<string, string> = {
-  '1X2': 'Match Result',
-  OU25: 'O/U 2.5',
-  BTTS: 'Both Score',
-};
-
 function parsePool(s: string | undefined): number {
   if (!s) return 0;
   const n = Number(s);
   return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Group market entries by their `matchId` so each fixture is rendered once
+ * with all its market types inside (Match Result / O/U 2.5 / Both Score).
+ * Preserves the input ordering of the first market seen per fixture.
+ */
+function groupByFixture(
+  markets: MarketViewDto[],
+): Array<{ fixture: MarketViewDto; markets: MarketViewDto[] }> {
+  const order: string[] = [];
+  const buckets = new Map<string, MarketViewDto[]>();
+  for (const m of markets) {
+    if (!buckets.has(m.matchId)) {
+      order.push(m.matchId);
+      buckets.set(m.matchId, []);
+    }
+    buckets.get(m.matchId)!.push(m);
+  }
+  return order.map((id) => {
+    const list = buckets.get(id)!;
+    return { fixture: list[0], markets: list };
+  });
 }
 
 export function MarketsPage() {
@@ -83,17 +101,24 @@ export function MarketsPage() {
     [markets, filter, typeFilter],
   );
 
-  const PAGE = 36;
+  const fixtures = useMemo(() => groupByFixture(filtered), [filtered]);
+  const uniqueMatchCount = useMemo(
+    () => new Set(markets.map((m) => m.matchId)).size,
+    [markets],
+  );
+
+  const PAGE = 24;
   const [visible, setVisible] = useState(PAGE);
   useEffect(() => setVisible(PAGE), [filter, typeFilter]);
-  const shown = filtered.slice(0, visible);
+  const shownFixtures = fixtures.slice(0, visible);
+  const totalShownMarkets = shownFixtures.reduce((acc, f) => acc + f.markets.length, 0);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-1">
       {/* === HERO BAND ============================================== */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div className="md:col-span-8">
-          <XCupHero liveCount={liveCount} />
+          <XCupHero liveCount={liveCount} fixtureCount={uniqueMatchCount} marketCount={markets.length} />
         </div>
         <div className="md:col-span-4">
           <div className="stadium-card relative overflow-hidden p-6 h-full flex flex-col items-center justify-center text-center">
@@ -148,9 +173,9 @@ export function MarketsPage() {
         <XCupMiniWidget
           variant="bracket"
           label="Bracket"
-          value={104}
-          footer="World Cup fixtures"
-          loading={false}
+          value={uniqueMatchCount}
+          footer="indexed fixtures"
+          loading={loading}
         />
         <XCupMiniWidget
           variant="fanpass"
@@ -173,7 +198,8 @@ export function MarketsPage() {
         </div>
         {!loading && !error && (
           <span className="text-xs tabular text-stadium-text-muted">
-            {filtered.length} <span className="opacity-70">/ {markets.length}</span> markets
+            {fixtures.length} {fixtures.length === 1 ? 'fixture' : 'fixtures'}
+            <span className="opacity-70"> · {totalShownMarkets} markets</span>
           </span>
         )}
       </div>
@@ -205,53 +231,25 @@ export function MarketsPage() {
         emptyLabel="No fixtures in this filter yet"
         onRetry={reload}
       >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {shown.map((m) => (
-            <MarketCard key={m.id} market={m} onOpen={() => openMarket(m.id)} />
+        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+          {shownFixtures.map(({ fixture, markets: fxMarkets }) => (
+            <FixtureCard
+              key={fixture.matchId}
+              fixture={fixture}
+              markets={fxMarkets}
+              onOpenMarket={openMarket}
+            />
           ))}
         </div>
-        {filtered.length > visible && (
+        {fixtures.length > visible && (
           <button
             onClick={() => setVisible((v) => v + PAGE)}
             className="mx-auto mt-5 block rounded-full border border-stadium-line px-5 py-2 text-xs font-bold text-stadium-text-secondary transition-colors hover:border-stadium-line-strong hover:text-stadium-text"
           >
-            Load more · {filtered.length - visible} left
+            Load more · {fixtures.length - visible} fixtures left
           </button>
         )}
       </StatePanel>
     </div>
-  );
-}
-
-function MarketCard({ market, onOpen }: { market: MarketViewDto; onOpen: () => void }) {
-  return (
-    <button onClick={onOpen} className="stadium-card stadium-card-hover group flex flex-col gap-3.5 p-4 text-left">
-      <div className="flex items-center justify-between">
-        <span className="truncate text-[11px] font-semibold text-stadium-text-muted">{market.stage}</span>
-        <MarketStatusBadge status={market.marketStatus} />
-      </div>
-
-      <MatchupHeader home={market.home} away={market.away} kickoffUtc={market.kickoffUtc} />
-
-      <span className="-mt-1 w-fit rounded-md border border-stadium-line bg-stadium-base px-2 py-0.5 text-[10px] font-bold text-gold">
-        {TYPE_SHORT[market.marketType] ?? market.marketType}
-      </span>
-
-      <OutcomeBar
-        odds={market.impliedOdds}
-        winningOutcome={market.winningOutcome}
-        outcomeLabels={market.outcomeLabels}
-      />
-
-      <div className="flex items-center justify-between border-t border-stadium-line pt-3">
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-stadium-text-muted">Pool</div>
-          <div className="font-mono text-sm font-semibold text-stadium-text">{formatPool(market.pools.total)}</div>
-        </div>
-        <span className="flex items-center gap-1 text-xs font-bold text-pitch opacity-0 transition-opacity group-hover:opacity-100">
-          Predict <ArrowRight className="h-3.5 w-3.5" />
-        </span>
-      </div>
-    </button>
   );
 }
