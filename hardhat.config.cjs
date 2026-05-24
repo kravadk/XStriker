@@ -6,7 +6,7 @@ const KEY = process.env.DEPLOYER_PRIVATE_KEY;
 const FORK = process.env.FORK === "1";
 
 /**
- * Mirror-local hardhat config for the X Cup contract layer (kravadk/XCup
+ * Mirror-local hardhat config for the X Cup contract layer (kravadk/XStriker
  * standalone clone). Mirrors the umbrella's hardhat.config.cjs but uses
  * paths relative to this folder (./contracts instead of ./apps/xcup/contracts).
  *

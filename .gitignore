@@ -1,4 +1,4 @@
-# Mirror-local gitignore for kravadk/XCup. The umbrella .gitignore covers the
+# Mirror-local gitignore for kravadk/XStriker. The umbrella .gitignore covers the
 # monorepo; this one runs when the mirror is cloned standalone.
 
 node_modules
