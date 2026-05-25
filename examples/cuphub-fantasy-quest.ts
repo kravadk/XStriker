@@ -25,7 +25,10 @@ interface FanScore {
 }
 
 const CUPHUB = process.env.CUPHUB_URL ?? 'http://localhost:8787';
-const PLAYER_WALLET = process.env.PLAYER_WALLET ?? '0x0E437c109A4C1e15172c4dA557E77724D7243F71';
+const PLAYER_WALLET = process.env.PLAYER_WALLET;
+if (!PLAYER_WALLET) {
+  throw new Error('PLAYER_WALLET env var required (e.g. PLAYER_WALLET=0xYourAddress ts-node cuphub-fantasy-quest.ts)');
+}
 
 async function cup<T>(path: string): Promise<T> {
   const headers = process.env.CUPHUB_PAYMENT ? { 'X-PAYMENT': process.env.CUPHUB_PAYMENT } : undefined;
