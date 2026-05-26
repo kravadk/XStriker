@@ -36,8 +36,10 @@ function parsePool(s: string | undefined): number {
 }
 
 /**
- * Group market entries by their `matchId` so each fixture is rendered once
- * with all its market types inside (Match Result / O/U 2.5 / Both Score).
+ * Group market entries by their `cupMatchId` (raw fixture string) so each
+ * fixture is rendered once with all its market types inside (Match Result /
+ * O/U 2.5 / Both Score). The on-chain `matchId` is a per-market hash that
+ * differs across market types of the same fixture, so we can't group on it.
  * Preserves the input ordering of the first market seen per fixture.
  */
 function groupByFixture(
@@ -46,11 +48,11 @@ function groupByFixture(
   const order: string[] = [];
   const buckets = new Map<string, MarketViewDto[]>();
   for (const m of markets) {
-    if (!buckets.has(m.matchId)) {
-      order.push(m.matchId);
-      buckets.set(m.matchId, []);
+    if (!buckets.has(m.cupMatchId)) {
+      order.push(m.cupMatchId);
+      buckets.set(m.cupMatchId, []);
     }
-    buckets.get(m.matchId)!.push(m);
+    buckets.get(m.cupMatchId)!.push(m);
   }
   return order.map((id) => {
     const list = buckets.get(id)!;
